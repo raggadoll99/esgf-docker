@@ -4,7 +4,7 @@
 # o ORP
 # o Dashboard
 
-FROM esgfhub/esgf-tomcat:devel
+FROM esgfhub/esgf-tomcat:1.2
 
 MAINTAINER Luca Cinquini <luca.cinquini@jpl.nasa.gov>
 

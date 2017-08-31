@@ -1,7 +1,7 @@
 # ESGF Identity Provider node
 # Implemented as Java web servlet application running inside Tomcat container.
 
-FROM esgfhub/esgf-tomcat:devel
+FROM esgfhub/esgf-tomcat:1.2
 
 MAINTAINER Luca Cinquini <luca.cinquini@jpl.nasa.gov>
 
