@@ -10,8 +10,8 @@ configs:
   # FIXME
   nginx-conf:
     file: /Users/cinquini/eclipse-workspace/esgf-docker/esgf.conf
-  tomcat-conf:
-    file: /Users/cinquini/eclipse-workspace/esgf-docker/server.xml
+  #tomcat-conf:
+  #  file: /Users/cinquini/eclipse-workspace/esgf-docker/server.xml
 
 secrets:
   database-password:
@@ -49,7 +49,7 @@ services:
       - source: rootadmin-password
         target: /esg/secrets/rootadmin-password
     volumes:
-      - pg_data:/var/lib/pgsql/data
+      - postgres-data:/var/lib/pgsql/data
     deploy:
       placement:
         constraints: [node.labels.esgf_db_node == true]
@@ -80,34 +80,115 @@ services:
       placement:
         constraints: [node.labels.esgf_idp_node == true]
         
-  # TDS 
-  esgf-tds:
-    image: "${ESGF_HUB}/esgf-tds:${ESGF_VERSION}"
+#  # TDS 
+#  esgf-tds:
+#    image: "${ESGF_HUB}/esgf-tds:${ESGF_VERSION}"
+#    ports:
+#      - "8082:8080"
+#    networks:
+#      - default
+#    environment:
+#      ESGF_HOSTNAME:
+#      ESGF_DATABASE_HOST: esgf-postgres
+#      ESGF_COOKIE_SECRET_KEY_FILE: /esg/secrets/shared-cookie-secret-key
+#      ESGF_TDS_ADMIN_PASSWORD_FILE: /esg/secrets/rootadmin-password
+#    volumes:
+#      - "tds-content:/esg/content/thredds"
+#      - "esg-data:/esg/data"
+#    secrets:
+#      - source: rootadmin-password
+#        target: /esg/secrets/rootadmin-password
+#      - source: shared-cookie-secret-key
+#        target: /esg/secrets/shared-cookie-secret-key
+#    configs: 
+#      - source: esg-trust-bundle
+#        target: /esg/certificates/esg-trust-bundle.pem 
+#    depends_on:
+#      - esgf-postgres
+#    deploy:
+#      replicas: 1
+#      placement:
+#        constraints: [node.labels.esgf_data_node == true]
+    
+  # Zookeeper
+  esgf-zookeeper:
+    image: "zookeeper:3.4"
+    restart: always
+    networks:
+      - default
+    expose:
+      - "2181"
+      - "2888"
+      - "3888"
+    volumes:
+      - "zk-data:/data"
+      - "zk-datalog:/datalog"
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc 127.0.0.1 2181 | grep imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.labels.esgf_index_node == true]
+       
+  # Solr 
+  esgf-solr:
+    image: "${ESGF_HUB}/esgf-solr:${ESGF_VERSION}"
+    restart: always
+    networks:
+      - default
+    environment:
+      SOLR_HOME: /esg/solr-home
+      SOLR_HEAP: 1g
+      ZOOKEEPER_HOST: esgf-zookeeper
+    command:
+      - "solr-foreground"
+      - "-c"
+      - "-p"
+      - "8983"
+      - "-z"
+      - "esgf-zookeeper:2181"
+      - "-s"
+      - "/esg/solr-home"
+    volumes:
+      - "solr-home:/esg/solr-home"
+      - "solr-index:/esg/solr-index"
+    depends_on:
+      - esgf-zookeeper
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.labels.esgf_index_node == true]
+
+  # ESGF Index Node aka ESGF Search web application
+  esgf-index-node:
+    image: "${ESGF_HUB}/esgf-index-node:${ESGF_VERSION}"
     ports:
-      - "8082:8080"
+      - "8083:8080"
+    restart: always
+    networks:
+      - default 
     environment:
       ESGF_HOSTNAME:
+      ESGF_SOLR_HOSTNAME: esgf-solr:8983
       ESGF_DATABASE_HOST: esgf-postgres
-      ESGF_COOKIE_SECRET_KEY_FILE: /esg/secrets/shared-cookie-secret-key
-      ESGF_TDS_ADMIN_PASSWORD_FILE: /esg/secrets/rootadmin-password
-    volumes:
-      - "tds_content:/esg/content/thredds"
-      - "esg_data:/esg/data"
-    secrets:
-      - source: rootadmin-password
-        target: /esg/secrets/rootadmin-password
-      - source: shared-cookie-secret-key
-        target: /esg/secrets/shared-cookie-secret-key
     configs: 
       - source: esg-trust-bundle
         target: /esg/certificates/esg-trust-bundle.pem 
     depends_on:
-      - esgf-postgres
+      - esgf-solr
+    # FIXME
+    entrypoint:
+      - "tail"
+      - "-f"
+      - "/dev/null"
     deploy:
       replicas: 1
       placement:
-        constraints: [node.labels.esgf_data_node == true]
-    
+        constraints: [node.labels.esgf_index_node == true]
+ 
         
   # ESGF proxy
 #  esgf-proxy:
@@ -143,12 +224,17 @@ services:
 #      placement:
 #        constraints: [node.labels.esgf_front_node == true]
 
-
+  
 # Use Docker volumes to store persistent data
 volumes:
-  # postgres database
-  pg_data:
-  # TDS catalogs
-  tds_content:
-  # science data
-  esg_data: 
+  zk-data:
+  zk-datalog:
+  solr-home:
+  postgres-data:
+  tds-content:
+  slcs-postgres-data:
+  slcs-trustroots:
+  auth-postgres-data:
+  esg-data:
+  solr-index:
+  
