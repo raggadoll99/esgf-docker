@@ -10,6 +10,8 @@ configs:
   # FIXME
   nginx-conf:
     file: /Users/cinquini/eclipse-workspace/esgf-docker/esgf.conf
+  tomcat-conf:
+    file: /Users/cinquini/eclipse-workspace/esgf-docker/server.xml
 
 secrets:
   database-password:
@@ -22,6 +24,8 @@ secrets:
     file: $ESGF_CONFIG/certificates/hostcert/hostcert.crt
   hostkey: 
     file: $ESGF_CONFIG/certificates/hostcert/hostcert.key
+  shared-cookie-secret-key:
+    file: $ESGF_CONFIG/secrets/shared-cookie-secret-key
 
 services:
 
@@ -56,6 +60,8 @@ services:
     networks:
       - default
       - dbnetwork
+    ports:
+      - "8081:8080"
     environment: 
       ESGF_HOSTNAME:
       ESGF_DATABASE_HOST: esgf-postgres
@@ -72,41 +78,75 @@ services:
       placement:
         constraints: [node.labels.esgf_idp_node == true]
         
-  # ESGF proxy
-  esgf-proxy:
-    image: "${ESGF_HUB}/esgf-proxy:${ESGF_VERSION}"
-    networks: 
-      - default
+  # TDS 
+  esgf-tds:
+    image: "${ESGF_HUB}/esgf-tds:${ESGF_VERSION}"
     ports:
-      - "80:80"
-      - "443:443"
-    environment: 
+      - "8082:8080"
+    environment:
       ESGF_HOSTNAME:
-      ESGF_SOLR_UPSTREAM: http://esgf-solr:8983
-      ESGF_INDEX_NODE_UPSTREAM: http://esgf-index-node:8080
-      ESGF_TDS_UPSTREAM: http://esgf-tds:8080
-      ESGF_COG_UPSTREAM: http://esgf-cog:8000
-      ESGF_ORP_UPSTREAM: http://esgf-orp:8080
-      ESGF_IDP_UPSTREAM: http://esgf-idp-node:8080
-      ESGF_SLCS_UPSTREAM: http://esgf-slcs:8000
-      ESGF_AUTH_UPSTREAM: http://esgf-auth:8000
+      ESGF_DATABASE_HOST: esgf-postgres
+      ESGF_COOKIE_SECRET_KEY_FILE: /esg/secrets/shared-cookie-secret-key
+      ESGF_TDS_ADMIN_PASSWORD_FILE: /esg/secrets/rootadmin-password
+    volumes:
+      - "tds_content:/esg/content/thredds"
+      - "esg_data:/esg/data"
     secrets:
-    - source: hostcert
-      target: /etc/nginx/ssl/hostcert.crt
-    - source: hostkey
-      target: /etc/nginx/ssl/hostcert.key
-    configs:
+      - source: rootadmin-password
+        target: /esg/secrets/rootadmin-password
+      - source: shared-cookie-secret-key
+        target: /esg/secrets/shared-cookie-secret-key
+    configs: 
       - source: esg-trust-bundle
         target: /esg/certificates/esg-trust-bundle.pem 
-      # FIXME
-      - source: nginx-conf
-        target: /etc/nginx/conf.d/esgf.conf
+    depends_on:
+      - esgf-postgres
     deploy:
       replicas: 1
       placement:
-        constraints: [node.labels.esgf_front_node == true]
+        constraints: [node.labels.esgf_data_node == true]
+    
+        
+  # ESGF proxy
+#  esgf-proxy:
+#    image: "${ESGF_HUB}/esgf-proxy:${ESGF_VERSION}"
+#    networks: 
+#      - default
+#    ports:
+#      - "80:80"
+#      - "443:443"
+#    environment: 
+#      ESGF_HOSTNAME:
+#      ESGF_SOLR_UPSTREAM: http://esgf-solr:8983
+#      ESGF_INDEX_NODE_UPSTREAM: http://esgf-index-node:8080
+#      ESGF_TDS_UPSTREAM: http://esgf-tds:8080
+#      ESGF_COG_UPSTREAM: http://esgf-cog:8000
+#      ESGF_ORP_UPSTREAM: http://esgf-orp:8080
+#      ESGF_IDP_UPSTREAM: http://esgf-idp-node:8080
+#      ESGF_SLCS_UPSTREAM: http://esgf-slcs:8000
+#      ESGF_AUTH_UPSTREAM: http://esgf-auth:8000
+#    secrets:
+#    - source: hostcert
+#      target: /etc/nginx/ssl/hostcert.crt
+#    - source: hostkey
+#      target: /etc/nginx/ssl/hostcert.key
+#    configs:
+#      - source: esg-trust-bundle
+#        target: /esg/certificates/esg-trust-bundle.pem 
+#      # FIXME
+#      - source: nginx-conf
+#        target: /etc/nginx/conf.d/esgf.conf
+#    deploy:
+#      replicas: 1
+#      placement:
+#        constraints: [node.labels.esgf_front_node == true]
+
 
 # Use Docker volumes to store persistent data
 volumes:
   # postgres database
   pg_data:
+  # TDS catalogs
+  tds_content:
+  # science data
+  esg_data: 
