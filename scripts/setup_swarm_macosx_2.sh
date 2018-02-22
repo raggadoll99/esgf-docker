@@ -4,8 +4,8 @@
 
 # create all VMs
 # (assign more memory to last node which will be the data-node)
-docker-machine create --driver virtualbox node1
-docker-machine create --driver virtualbox --virtualbox-memory 2048 node2
+docker-machine create --driver xhyve node1
+docker-machine create --driver xhyve --xhyve-memory-size 2048 node2
 docker-machine ls
 
 # start the swarm
