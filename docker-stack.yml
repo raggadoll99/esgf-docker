@@ -68,6 +68,8 @@ services:
     secrets:
     - source: database-password
       target: /esg/config/.esg_pg_pass
+    - source: rootadmin-password
+      target: /esg/secrets/rootadmin-password
     configs:
       - source: esg-trust-bundle
         target: /esg/certificates/esg-trust-bundle.pem 
