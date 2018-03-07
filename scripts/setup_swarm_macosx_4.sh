@@ -30,9 +30,9 @@ done
 # assign functional labels to nodes
 eval $(docker-machine env node1)
 docker node ls
-docker node update --label-add esgf_front_node=true node1
-docker node update --label-add esgf_db_node=true node2
-docker node update --label-add esgf_idp_node=true node2
-docker node update --label-add esgf_index_node=true node3
-docker node update --label-add esgf_solr_node=true node3
-docker node update --label-add esgf_data_node=true node4
+#docker node update --label-add esgf_front_node=true node1
+#docker node update --label-add esgf_db_node=true node2
+#docker node update --label-add esgf_idp_node=true node2
+#docker node update --label-add esgf_index_node=true node3
+#docker node update --label-add esgf_solr_node=true node3
+#docker node update --label-add esgf_data_node=true node4

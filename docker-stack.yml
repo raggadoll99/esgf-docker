@@ -34,6 +34,8 @@ services:
     image: "${ESGF_HUB}/esgf-postgres:${ESGF_VERSION}"
     networks:
       - dbnetwork
+    ports:
+      - "5432:5432"
     environment:
       DBSUPER_PASSWORD_FILE: /esg/secrets/database-password
       ESGCET_PASSWORD_FILE: /esg/secrets/database-publisher-password
@@ -139,6 +141,8 @@ services:
     restart: always
     networks:
       - default
+    ports:
+      - "8983:8983"
     environment:
       SOLR_HOME: /esg/solr-home
       SOLR_HEAP: 1g
@@ -180,10 +184,10 @@ services:
     depends_on:
       - esgf-solr
     # FIXME
-    entrypoint:
-      - "tail"
-      - "-f"
-      - "/dev/null"
+    #entrypoint:
+    #  - "tail"
+    #  - "-f"
+    #  - "/dev/null"
     deploy:
       replicas: 1
       placement:
