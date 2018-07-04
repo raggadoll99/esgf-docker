@@ -60,7 +60,7 @@ pipeline
     node
     {
       // Execute this job only on Docker ready nodes.
-      label 'esgf-docker-slave'
+      label 'esgf-docker-slave-2'
 
       // Don't let Jenkins generate the workspace name: it is too long and
       // crashes the ESGF config generation stage.
@@ -80,7 +80,7 @@ pipeline
   environment
   {
     /*** ESGF-DOCKER **/
-    ESGF_HUB='esgfhub'
+    ESGF_HUB='sebastiengardoll'
     ESGF_PREFIX=''
     ESGF_DOCKER_REPO_PATH="${env.WORKSPACE}"
     ESGF_HOSTNAME=sh(returnStdout: true, script: 'hostname')
@@ -104,12 +104,12 @@ pipeline
     ROOT_ADMIN_SECRET_FILE_PATH="${ESGF_CONFIG}/secrets/rootadmin-password"
 
     /*** SLACK ***/
-    SLACK_CHANNEL='#esgf-docker-ci'
-    SLACK_CREDENTIAL_ID='slack_esgf_esgf-docker-ci'
+    SLACK_CHANNEL='#tmp'
+    SLACK_CREDENTIAL_ID='slack_prodiguer_tmp'
 
     /*** GITHUB ***/
-    GIT_REPO_POSTFIX='github.com/ESGF/esgf-docker.git'
-    GITHUB_CREDENTIAL_ID='esgfci_github'
+    GIT_REPO_POSTFIX='github.com/raggadoll99/esgf-docker.git'
+    GITHUB_CREDENTIAL_ID='raggadoll99_github'
   }
 
   stages
